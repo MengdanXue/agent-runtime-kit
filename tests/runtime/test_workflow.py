@@ -175,7 +175,7 @@ async def test_no_provider_can_plan_or_decide_its_way_past_risk_and_approval(mak
 
     execute_now = llm_plan()
     execute_now["steps"].append({"tool": "execution", "purpose": "sell 5 now", "required_inputs": []})
-    llm = _ProviderLLM(provider, model, execute_now, execute_now,
+    llm = _ProviderLLM(provider, model, execute_now, execute_now, review=[{"issues": []}],
                        decision=[{**GROUNDED, "decision": "SELL", "action_level": "EXECUTE"}])
     h = make_workflow(FakeJava({"AAPL": sell_setup(80)}), llm=llm, today=date(2026, 7, 21))
     d = (await h.run("分析 AAPL，考虑卖出 5 股")).to_dict()
@@ -200,7 +200,7 @@ async def test_a_plan_with_unknown_strategies_never_reaches_a_tool_and_risk_stil
     from .test_planning import with_named_input
 
     placeholder = with_named_input("strategies", "registered")
-    llm = _ProviderLLM("deepseek", "deepseek-chat", placeholder, placeholder)
+    llm = _ProviderLLM("deepseek", "deepseek-chat", placeholder, placeholder, review=[{"issues": []}])
     h = make_workflow(FakeJava({"AAPL": sell_setup(80)}), llm=llm, today=date(2026, 7, 21))
     d = (await h.run("分析 AAPL，考虑卖出 5 股")).to_dict()
 
@@ -262,7 +262,7 @@ def accepted_intent(run_dict):
 @pytest.mark.asyncio
 async def test_a_backtest_without_enough_history_is_an_observation_and_the_review_continues(make_workflow):
     # The model adds a backtest to a sale the user asked for; the store cannot simulate it.
-    llm = ScriptedLLM(_plan_with_backtest(portfolio_id=7))
+    llm = ScriptedLLM(_plan_with_backtest(portfolio_id=7), review=[{"issues": []}] * 2)
     h = await _short_history_over_limit(make_workflow, llm)
     run = await h.run("我的AAPL仓位超过上限，减持 5 股 AAPL", portfolio_id=7)
     d = run.to_dict()
@@ -356,7 +356,7 @@ async def test_an_optional_backtest_timing_out_after_its_retries_is_skipped(make
         return ToolResult.failure(ToolErrorCode.TIMEOUT, "backtest timed out")
 
     monkeypatch.setattr(BacktestTool, "run", slow)
-    llm = ScriptedLLM(_plan_with_backtest(portfolio_id=7, strategy="momentum"))
+    llm = ScriptedLLM(_plan_with_backtest(portfolio_id=7, strategy="momentum"), review=[{"issues": []}] * 2)
     h = await _short_history_over_limit(make_workflow, llm)
     d = (await h.run("我的AAPL仓位超过上限，减持 5 股 AAPL", portfolio_id=7)).to_dict()
 
@@ -540,7 +540,8 @@ async def test_critic_review_is_structured_and_never_edits_results(make_workflow
 @pytest.mark.asyncio
 async def test_llm_critic_can_add_issues_but_not_remove_the_rule_findings(make_workflow):
     llm = ScriptedLLM(review=[{"issues": [
-        {"type": "logic_gap", "severity": "LOW", "message": "the momentum view rests on one strategy",
+        {"type": "logic_gap", "severity": "LOW", "category": "signal_disagreement",
+         "message": "the momentum view rests on one strategy",
          "suggestion": "check another window", "remedy_days": 0, "remedy_factors": ""}]}])
     java = FakeJava({"AAPL": calm_uptrend(), "MSFT": calm_uptrend()})
     db = FakeDB({7: OWNER}, {7: [position("AAPL", 10), position("MSFT", 30)]})
@@ -555,7 +556,8 @@ async def test_llm_critic_can_add_issues_but_not_remove_the_rule_findings(make_w
 @pytest.mark.asyncio
 async def test_llm_critic_citing_unknown_numbers_is_not_used(make_workflow):
     llm = ScriptedLLM(review=[{"issues": [
-        {"type": "risk_conflict", "severity": "HIGH", "message": "AAPL will fall to 150 next week",
+        {"type": "risk_conflict", "severity": "HIGH", "category": "risk_assessment",
+         "message": "AAPL will fall to 150 next week",
          "suggestion": "sell", "remedy_days": 0, "remedy_factors": ""}]}])
     h = make_workflow(FakeJava({"AAPL": calm_uptrend()}), llm=llm)
     d = (await h.run("分析 AAPL")).to_dict()

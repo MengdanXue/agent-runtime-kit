@@ -20,10 +20,13 @@ only when its owner approves it through ``/runtime/run`` (PAPER ONLY, once).
 * Risk Agent      - RiskTool for the symbol and the portfolio, exposure weights
   from real closes, the user's limits from memory; may VETO new exposure, and
   checks that a requested sale only reduces a held long position. After a
-  veto the Critic still reviews and nothing is re-analysed; the only trade
-  that can still be proposed is such a reducing sale.
+  veto the Critic still reviews; the only trade that can still be proposed -
+  and the only one that may still be re-analysed, when the concentration
+  limit is its only veto - is such a reducing sale.
 * Critic Agent    - a structured review (see :mod:`.review`); request_revision
-  with a remedy sends the plan back to the planner for one revision.
+  with a remedy sends the plan back to the planner for one revision. When a
+  model review is required (``review_policy``) and unusable, a requested
+  trade is not proposed.
 * Portfolio Decision Agent - one structured decision (LLM with a validator, or
   rules), written back to memory with the run's task id.
 
@@ -35,6 +38,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import replace
 from datetime import date
@@ -50,7 +54,7 @@ from .planner import MIN_BARS_FOR_ANALYSIS
 from .planning import BARS_REF, Clarification, Plan, PlanningService, RESEARCH_TOOLS, goal_facts
 from .recorder import RunLog
 from .reports import AgentReport, make_report
-from .review import CriticAgent, PortfolioDecisionAgent
+from .review import REVIEW_FAILURE_CODES, CriticAgent, PortfolioDecisionAgent
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +206,7 @@ class ResearchAgent:
                 findings["market"][out["symbol"]] = {
                     "call_id": call_id, "count": out["count"], "first_date": out["first_date"],
                     "last_date": out["last_date"], "last_close": out["last_close"],
-                    "days_requested": args.get("days")}
+                    "days_requested": args.get("days"), "days_requested_unit": "calendar"}
                 if out["symbol"] == plan.symbol and out["count"] < MIN_BARS_FOR_ANALYSIS:
                     return make_report(self.name, "FAILED",
                                        f"only {out['count']} bars for {plan.symbol}, need {MIN_BARS_FOR_ANALYSIS}",
@@ -230,6 +234,9 @@ class ResearchAgent:
                 m = out["metrics"]
                 findings["backtests"].append({"call_id": call_id, "strategy": out["strategy"],
                                               "trade_count": out["trade_count"],
+                                              "fill_count": out.get("fill_count"),
+                                              "open_quantity_at_end": out.get("open_quantity_at_end"),
+                                              "basis": out.get("basis"),
                                               "sharpe_ratio": m.get("sharpe_ratio"),
                                               "total_return": m.get("total_return"),
                                               "max_drawdown": m.get("max_drawdown")})
@@ -284,7 +291,10 @@ class RiskAgent:
                 evidence.append(call_id)
                 symbol_level = res.output["risk_level"]
                 findings["symbol_risk"] = {"call_id": call_id, "level": symbol_level,
-                                           "metrics": res.output["metrics"], "policy": res.output["policy"]}
+                                           "metrics": res.output["metrics"], "policy": res.output["policy"],
+                                           "max_drawdown_sign": "negative",
+                                           "level_basis": "annualized_volatility and max_drawdown against "
+                                                          "policy only; returns and Sharpe are not used"}
                 checks.append({"check": "symbol_risk", "status": "veto" if symbol_level == "high" else "pass",
                                "detail": f"{plan.symbol} risk level {symbol_level}"})
                 if symbol_level == "high":
@@ -312,7 +322,15 @@ class RiskAgent:
                 portfolio_level = res.output["risk_level"]
                 findings["portfolio_risk"] = {"call_id": call_id, "level": portfolio_level,
                                               "metrics": res.output["metrics"],
-                                              "unavailable": res.output["unavailable"]}
+                                              "unavailable": res.output["unavailable"],
+                                              "policy": res.output.get("policy"),
+                                              "max_drawdown_sign": "positive_magnitude",
+                                              "level_basis": "abs(var_95_pct) against policy only "
+                                                             "(var_medium_pct, var_high_pct); returns, "
+                                                             "Sharpe and alpha are not used",
+                                              "var_basis": "*_pct = amount / var_base_value, the analytics "
+                                                           "service's portfolio equity (may include cash); "
+                                                           "not the exposure total_value"}
                 checks.append({"check": "portfolio_risk",
                                "status": "veto" if portfolio_level == "high" else "pass",
                                "detail": f"portfolio risk level {portfolio_level}"})
@@ -370,6 +388,7 @@ class RiskAgent:
         total = sum(values.values())
         weights = {s: round(v / total * 100, 4) for s, v in values.items()} if total > 0 else {}
         return {"weights_pct": weights, "total_value": round(total, 2),
+                "weights_basis": "share of the summed value of priced holdings; cash excluded",
                 "values": {s: round(v, 2) for s, v in values.items()}, "missing": missing,
                 "derived_from": derived_from,
                 "method": "abs(quantity) x latest EOD close from market_data"}
@@ -460,6 +479,33 @@ class RiskAgent:
 
 # ---------------------------------------------------------------------------- workflow
 
+def _reducing_sale_of_breach(plan: Plan, risk: AgentReport) -> bool:
+    """The only veto is the concentration limit on the symbol, and the request is a
+    sale that reduces that held long position. Re-analysis may then run; nothing it
+    finds can lift the veto or any blocking rule."""
+    k = risk.findings
+    trade_check = k.get("trade_check") or {}
+    return (bool(plan.trade) and plan.trade["side"] == "sell"
+            and plan.symbol in (k.get("concentration_breaches") or {})
+            and len(k.get("vetoes") or []) == 1
+            and trade_check.get("reduces_exposure") is True)
+
+
+def review_policy(llm: Optional[StructuredLLM], required: Optional[bool]) -> Dict[str, Any]:
+    """Must a trade wait for a usable model review? An explicit argument wins, then
+    AGENT_LLM_REVIEW_REQUIRED; otherwise yes whenever a model client is configured -
+    also one that is configured but unusable (missing key, wrong provider), so
+    breaking the model configuration cannot switch the review off. Only a workflow
+    with no model at all (and no requirement) keeps the rule-only mode."""
+    if required is not None:
+        return {"required": bool(required), "source": "argument"}
+    env = os.getenv("AGENT_LLM_REVIEW_REQUIRED", "").strip().lower()
+    if env:
+        return {"required": env in ("1", "true", "yes"), "source": "AGENT_LLM_REVIEW_REQUIRED"}
+    return {"required": llm is not None,
+            "source": "default: model configured" if llm is not None else "default: no model (rule-only)"}
+
+
 def data_summary(provenance: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Sources grouped for people: PostgreSQL / Derived analytics / Paper simulation."""
     groups: Dict[str, List[str]] = {}
@@ -492,7 +538,7 @@ class DecisionWorkflow:
                  proposals: Optional[ProposalStore] = None, run_log: Optional[RunLog] = None,
                  archive: Any = None, today: Optional[Callable[[], date]] = None,
                  decision_agent_factory: Optional[Callable[[], Any]] = None,
-                 llm: Optional[StructuredLLM] = None):
+                 llm: Optional[StructuredLLM] = None, llm_review_required: Optional[bool] = None):
         self.tools = tools
         self.planning = planning
         self.memory = memory
@@ -500,9 +546,12 @@ class DecisionWorkflow:
         self.run_log = run_log or RunLog()
         self.archive = archive
         llm = llm if llm is not None else planning.llm
+        self.review_policy = review_policy(llm, llm_review_required)
+        required = self.review_policy["required"]
         self.research = ResearchAgent()
         self.risk = RiskAgent()
-        self.critic = CriticAgent(today, llm=llm) if today else CriticAgent(llm=llm)
+        self.critic = (CriticAgent(today, llm=llm, review_required=required) if today
+                       else CriticAgent(llm=llm, review_required=required))
         self.decision = PortfolioDecisionAgent(decision_agent_factory, llm=llm)
 
     @staticmethod
@@ -601,10 +650,13 @@ class DecisionWorkflow:
         reanalysis: Dict[str, Any] = {"performed": False}
         remedies = [i for i in critic.findings["issues"]
                     if i["severity"] in ("HIGH", "MEDIUM") and i.get("remedy")]
-        if risk.status == "VETO":
+        if risk.status == "VETO" and not _reducing_sale_of_breach(plan, risk):
             if not critic.findings["valid"]:
                 run.event("decision", "no re-analysis: the Risk Agent vetoed new exposure", agent="critic")
         elif not critic.findings["valid"] and remedies:
+            if risk.status == "VETO":
+                run.event("decision", "re-analysis allowed: the only veto is the concentration limit "
+                          "this sale reduces; the veto and every blocking rule still apply", agent="critic")
             remedy: Dict[str, Any] = {}
             for i in remedies:
                 if i["remedy"].get("days"):
@@ -636,8 +688,11 @@ class DecisionWorkflow:
                     reports.append(critic)
                     reanalysis["outcome"] = "re-analysed with the revised plan"
 
+        failures = [i for rep in reports if rep.agent == "critic"
+                    for i in rep.findings["issues"] if i["code"] in REVIEW_FAILURE_CODES]
         decision, result, level = await self.decision.run(
-            plan, research, risk, critic, memory, self.proposals, ctx, run.task_id)
+            plan, research, risk, critic, memory, self.proposals, ctx, run.task_id,
+            review_failures=failures)
         self._report(run, decision)
         reports.append(decision)
         if level.rank >= ActionLevel.EXECUTE.rank:  # structural guarantee, never expected
@@ -645,6 +700,7 @@ class DecisionWorkflow:
         run.raise_level(level)
         result["action_level"] = run.action_level.value
         result["reanalysis"] = reanalysis
+        result["review_policy"] = self.review_policy
         result["planner"] = _planner_summary(plan, attempts)
         result["memory_used"] = {"preferences": {k: v["value"] for k, v in memory.preferences.items()},
                                  "relevant_ids": [m.item.id for m in memory.items],
@@ -656,6 +712,12 @@ class DecisionWorkflow:
         run.data_provenance = provenance_for(run, evidence)
         result["data_sources"] = sorted({s["source"] for s in run.data_provenance["sources"]})
         result["data_summary"] = data_summary(run.data_provenance)
+        waiver = (result["trade"] or {}).get("waiver")
+        if waiver is not None:  # option 2: what was downgraded, on which basis, or why not
+            run.event("decision", "research-quality issues downgraded to WARNING; the user must approve"
+                      if waiver["granted"] else "research-quality downgrade refused: "
+                      + "; ".join(c["condition"] for c in waiver["conditions"] if not c["passed"]),
+                      agent="decision", waiver=waiver)
         if result["trade"] and result["trade"].get("status") == "AWAITING_APPROVAL":
             run.event("approval", "trade proposal stored; waiting for the user's approval (PAPER)",
                       agent="approval", proposal_id=result["trade"]["proposal"]["proposal_id"])

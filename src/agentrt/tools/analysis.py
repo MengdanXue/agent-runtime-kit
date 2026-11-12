@@ -145,6 +145,21 @@ class BacktestOutput(BaseModel):
     final_equity: Optional[float]
     metrics: Dict[str, Optional[float]]
     unavailable_metrics: List[str]
+    fill_count: Optional[int] = None
+    open_quantity_at_end: Optional[float] = None
+    basis: Dict[str, str] = Field(default_factory=dict)
+
+
+BACKTEST_BASIS = {
+    "trade_count": "closed round trips; a buy not yet sold is not counted (see fill_count)",
+    "total_return": "final equity (cash + open position at the last close, after commission and "
+                    "slippage) / initial capital - 1; no benchmark",
+    "annual_return": "(1 + total_return) ** (365 / calendar days) - 1 (geometric)",
+    "volatility": "std of daily account returns x sqrt(252); idle cash earns 0",
+    "sharpe_ratio": "(mean daily account return x 252 - 0.03) / volatility: excess over a fixed 3% "
+                    "annual risk-free rate, arithmetic annualisation, so a small positive "
+                    "total_return can have a negative Sharpe",
+}
 
 
 class BacktestTool(Tool):
@@ -177,10 +192,16 @@ class BacktestTool(Tool):
             if number is None:
                 unavailable.append(key)
         equity = _finite(result.equity_curve.iloc[-1]) if len(result.equity_curve) else None
+        fills = getattr(result, "fills", None)
+        ledger = getattr(result, "ledger", None)
+        open_qty = (_finite(ledger["position"].iloc[-1])
+                    if ledger is not None and "position" in ledger and len(ledger) else None)
         output = {"symbol": params.symbol, "strategy": params.strategy,
                   "period": [bars[0]["date"], bars[-1]["date"]], "bars_used": len(bars),
                   "trade_count": len(result.trades), "final_equity": equity,
-                  "metrics": metrics, "unavailable_metrics": unavailable}
+                  "metrics": metrics, "unavailable_metrics": unavailable,
+                  "fill_count": len(fills) if fills is not None else None,
+                  "open_quantity_at_end": open_qty, "basis": BACKTEST_BASIS}
         return ToolResult.success(output, _derived(
             "src.strategies.BaseStrategy.run", ctx, strategy=params.strategy,
             params=strategy.params, commission=params.commission, slippage=params.slippage))

@@ -187,6 +187,8 @@ class RiskAgent(BaseAgent):
             if var_95:
                 metrics["var_95"] = var_95.get("var_amount")
                 metrics["var_95_pct"] = var_95.get("var_pct")
+                if var_95.get("equity") is not None:  # the base the *_pct figures divide by
+                    metrics["var_base_value"] = var_95.get("equity")
 
             var_99 = await self._collect(
                 "var_99",

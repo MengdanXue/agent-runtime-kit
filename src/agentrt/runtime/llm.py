@@ -60,6 +60,11 @@ class LLMError(Exception):
     """The model could not produce a structured answer."""
 
 
+class LLMOutputError(LLMError):
+    """The model answered, but not with a usable JSON object (truncated, no JSON,
+    invalid JSON, not an object) - an invalid answer rather than an unavailable model."""
+
+
 class StructuredLLM(Protocol):
     model: str
 
@@ -191,19 +196,19 @@ class AnthropicStructuredLLM:
             category = getattr(details, "category", None) if details else None
             raise LLMError(f"model declined the {schema_name} request (refusal: {category})")
         if response.stop_reason == "max_tokens":
-            raise LLMError(f"model output truncated ({schema_name})")
+            raise LLMOutputError(f"model output truncated ({schema_name})")
         text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
         if text is None:
-            raise LLMError(f"model returned no {schema_name} JSON")
+            raise LLMOutputError(f"model returned no {schema_name} JSON")
         text = text.strip()
         if text.startswith("```"):  # tolerate a fenced answer; the content is still validated
             text = text.strip("`").removeprefix("json").strip()
         try:
             data = json.loads(text)
         except ValueError as exc:
-            raise LLMError(f"model returned invalid JSON for {schema_name}") from exc
+            raise LLMOutputError(f"model returned invalid JSON for {schema_name}") from exc
         if not isinstance(data, dict):
-            raise LLMError(f"model returned a non-object {schema_name}")
+            raise LLMOutputError(f"model returned a non-object {schema_name}")
         return data
 
 

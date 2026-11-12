@@ -348,7 +348,8 @@ async def test_critic_approves_a_sound_analysis(make_workflow):
 @pytest.mark.asyncio
 async def test_critic_model_can_only_add_grounded_issues(make_workflow):
     llm = ScriptedLLM(review=[{"issues": [
-        {"type": "risk_conflict", "severity": "HIGH", "message": "AAPL will drop to 150",
+        {"type": "risk_conflict", "severity": "HIGH", "category": "risk_assessment",
+         "message": "AAPL will drop to 150",
          "suggestion": "sell", "remedy_days": 0, "remedy_factors": ""}]}])
     run = await make_workflow(FakeJava({"AAPL": calm_uptrend()}), llm=llm).run("分析 AAPL")
     critic = run.result["critic"]
