@@ -55,4 +55,4 @@ Files touched for this: `runtime/approval.py`, `runtime/memory.py`, `runtime/pla
 ## What is *not* verified
 
 - The quant agents (`agentrt.quant`) compute signals, factors, risk and optimisation; their numerical correctness was never independently checked in the host either. Treat them as examples of the agent pattern, not as validated analytics.
-- The LLM planner / critic / decision paths were exercised in the host with scripted fakes; a run against a real model was attempted in the host's 2026-09 release audit and blocked for lack of credentials. See README "What is and is not verified".
+- The LLM planner / critic / decision paths were exercised in the host with scripted fakes; a run against a real model was attempted in the host's 2026-09 release audit and blocked for lack of credentials. After the extraction, the sale / approval scenario was run against a real model (DeepSeek, sandbox data, 2026-11-12); see [VALIDATION.md](VALIDATION.md) and README "What is and is not verified".

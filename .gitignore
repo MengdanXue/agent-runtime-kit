@@ -11,3 +11,9 @@ build/
 /_staging/
 /data/
 /reports/
+
+# real-model validation: raw run records, local launchers and internal notes stay local
+/validation/real_llm/evidence/
+/validation/real_llm/with_key.py
+/validation/real_llm/replay_s2c.py
+/validation/real_llm/*.md
