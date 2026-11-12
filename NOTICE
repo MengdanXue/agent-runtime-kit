@@ -1,0 +1,35 @@
+agent-runtime-kit
+Copyright (c) 2025-2026 Mengdan Xue
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Provenance
+----------
+This package is the agent subsystem of TraderX (product name "QuantRiskPro
+V2.0"), a trading-management system prototype the author wrote alone in
+2025-2026. The work was prompted by a remote freelance enquiry that was never
+concluded: no contract was signed, no payment was made and nothing was
+delivered or accepted, so no rights were transferred. The TraderX repository
+stays private because it also holds the enquirer's requirement documents and
+data files; none of that material is included here.
+
+The code was copied from TraderX backend-python/src/agents (plus
+src/core/mock_guard.py, two API route modules and the agent tests) at
+revision 156d265e on 2026-11-12, into a fresh git history. Everything the
+host system used to provide - a database session, a strategy registry,
+portfolio storage, an EOD price service, an event-driven backtest engine - is
+now reached through agentrt.ports. The exact list of changes made during the
+extraction is in docs/PROVENANCE.md.
+
+Source files keep the headers they had in TraderX ("Copyright 2025 TraderX.
+All rights reserved." / "SPDX-License-Identifier: Apache-2.0"). "TraderX" is a
+name the author used for that project; the files are distributed here under
+the Apache License, Version 2.0, consistent with those SPDX tags.
+
+Third-party software
+--------------------
+No third-party source code is bundled. Runtime dependencies (pydantic,
+anthropic, httpx, PyYAML; optional openai, google-generativeai, numpy, pandas,
+scipy, fastapi, watchdog, quantrisk-core) are installed separately under their
+own licenses. The example skill definitions under examples/skills were written
+by the author; skill packs from other projects that lived alongside them in
+the original repository were not copied.
