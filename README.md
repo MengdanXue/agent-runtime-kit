@@ -24,7 +24,7 @@ pip install -e ".[dev]"               # + pytest and the optional numeric / API 
 pip install "git+https://github.com/MengdanXue/quantrisk-core.git"   # strategy registry for signal / backtest tools
 ```
 
-Extras: `openai`, `gemini` (debate adapters), `quant` (numpy / pandas / scipy for the quant agents), `api` (FastAPI routes), `skills` (file-watching skill discovery).
+Extras: `openai`, `gemini` (debate adapters), `quant` (numpy / pandas / scipy for the quant agents), `api` (FastAPI routes), `sql` (SQLAlchemy for the SQL-backed stores), `skills` (file-watching skill discovery).
 
 No API key, database or network is needed to import the package or run the tests. With `ANTHROPIC_API_KEY` set, the LLM planner / critic / decision paths are used (with validation and rule fallback); without it, the rule planner runs alone.
 
