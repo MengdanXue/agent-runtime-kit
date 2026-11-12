@@ -1,0 +1,727 @@
+{
+ "source": "evidence/20261112_204122_deepseek_s2c/model_calls.jsonl",
+ "note": "DeepSeek answers exactly as received (deepseek-flash, 2026-11-12 20:41 run); replayed offline by test_s2c.py",
+ "calls": [
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "plan",
+   "outcome": "parsed",
+   "response": {
+    "goal": "评估 AAPL 仓位超过单一持仓 20% 上限的情况，并为“减持 5 股 AAPL”这一人工决策提供研究依据（不执行交易）",
+    "reasoning_summary": "先读取组合 7 的持仓，确认 AAPL 当前股数与权重相对 20% 上限的超出幅度，从而判断减持 5 股的影响。再拉取 AAPL 日线行情，并基于同一批 bars 计算策略信号、因子暴露与策略回测，用于评估减持时机与市场环境。所有步骤仅提供研究证据，最终提案需人工确认，不涉及自动执行或风控判定。",
+    "steps": [
+     {
+      "tool": "portfolio",
+      "purpose": "读取组合 7 的持仓明细，确认 AAPL 当前股数、市值与权重，量化其相对单一持仓 20% 上限的超出幅度以及减持 5 股后的权重变化",
+      "required_inputs": [
+       {
+        "name": "portfolio_id",
+        "value": "7",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "market_data",
+      "purpose": "获取 AAPL 近期日线 OHLCV，作为信号、因子与回测的统一数据基础",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "days",
+        "value": "120",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "signal",
+      "purpose": "基于 AAPL 行情 bars 计算已注册策略的最新信号，为减持时点提供参考",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       }
+      ]
+     },
+     {
+      "tool": "factor",
+      "purpose": "计算 AAPL 的最新因子暴露（动量、波动率、RSI 等），刻画当前持仓的市场状态",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       }
+      ]
+     },
+     {
+      "tool": "backtest",
+      "purpose": "在相同 bars 上回测已注册策略，检验策略在该标的历史区间上的表现，为减持决策提供背景证据",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       }
+      ]
+     }
+    ],
+    "constraints": [
+     {
+      "key": "forbid_auto_trading",
+      "value": "True",
+      "source": "memory #3"
+     },
+     {
+      "key": "max_single_position_pct",
+      "value": "20.0",
+      "source": "memory #2"
+     },
+     {
+      "key": "risk_tolerance",
+      "value": "medium",
+      "source": "memory #1"
+     }
+    ],
+    "clarification_question": ""
+   }
+  },
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "plan",
+   "outcome": "parsed",
+   "response": {
+    "goal": "研究苹果公司（AAPL）减持 5 股这一决定，因为该持仓已超过 20% 的单仓上限。",
+    "reasoning_summary": "首先读取组合 7 的实际持仓，确认当前 AAPL 权重相对于 20% 上限的情况；随后获取 AAPL 近期日线行情，并基于同一批 K 线运行信号、因子和策略回测，以便在提交给人工审批之前评估减持的时机背景。整个过程仅用于分析；风险由 Risk Agent 单独评估，不安排任何执行操作。",
+    "steps": [
+     {
+      "tool": "portfolio",
+      "purpose": "读取组合 7 的持仓，确认当前的 AAPL 股票数量和权重相对于 20% 单仓上限的情况。",
+      "required_inputs": [
+       {
+        "name": "portfolio_id",
+        "value": "7",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "market_data",
+      "purpose": "为 AAPL 获取近期日线 OHLCV K 线，作为信号、因子和回测步骤的共享数据集。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "days",
+        "value": "120",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "signal",
+      "purpose": "基于 AAPL K 线计算已注册策略的最新信号，判断当前趋势背景是有利于还是不利于减持 5 股。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategies",
+        "value": "ma_cross,momentum,rsi_reversion",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "factor",
+      "purpose": "检查 AAPL 最新的因子暴露（趋势、动量、波动率、RSI），以便量化这次减持的时机背景。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "factors",
+        "value": "momentum_20d,momentum_60d,rsi_14d,volatility_20d,ma_deviation",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "backtest",
+      "purpose": "在 AAPL K 线上模拟一个已注册策略，了解基于规则的仓位管理在历史上的表现，作为减持决定的研究输入。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategy",
+        "value": "ma_cross",
+        "from_step": 0
+       }
+      ]
+     }
+    ],
+    "constraints": [
+     {
+      "key": "forbid_auto_trading",
+      "value": "True",
+      "source": "memory #3"
+     },
+     {
+      "key": "max_single_position_pct",
+      "value": "20.0",
+      "source": "memory #2"
+     },
+     {
+      "key": "risk_tolerance",
+      "value": "medium",
+      "source": "memory #1"
+     }
+    ],
+    "clarification_question": ""
+   }
+  },
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "review",
+   "outcome": "parsed",
+   "response": {
+    "issues": [
+     {
+      "type": "missing_data",
+      "severity": "HIGH",
+      "category": "backtest_coverage",
+      "message": "Only one strategy (ma_cross) has a backtest: 3 trades, sharpe_ratio -5.7833. The strategy driving the SELL view, momentum (signal -2, STRONG_SELL), and rsi_reversion (signal 0) have no backtest at all, so the consensus of \"3 strategies\" rests on one untested signal and one poorly tested neutral rule.",
+      "suggestion": "Backtest momentum and rsi_reversion on the same window before acting on the consensus score -0.6667; do not size a trade on an untested signal.",
+      "remedy_days": 365,
+      "remedy_factors": "momentum_20d,rsi_14d"
+     },
+     {
+      "type": "risk_conflict",
+      "severity": "MEDIUM",
+      "category": "signal_disagreement",
+      "message": "The consensus label SELL (-0.6667) is produced by 3 strategies of which ma_cross = 0 (HOLD) and rsi_reversion = 0 (HOLD); only momentum is negative. Factors disagree in the same way: rsi_14d = 30.5714 (near oversold) while momentum_20d = -0.0837 and momentum_60d = -0.1639. The SELL rationale in view_rationale cites only the aggregate score, not the disagreement.",
+      "suggestion": "Report the score as a weak/conflicted SELL and state that 2 of 3 strategies and the RSI factor do not confirm it.",
+      "remedy_days": 0,
+      "remedy_factors": "rsi_14d,momentum_60d"
+     },
+     {
+      "type": "logic_gap",
+      "severity": "MEDIUM",
+      "category": "historical_performance",
+      "message": "Measured performance is negative on both levels: ma_cross sharpe_ratio -5.7833, total_return -0.0177, max_drawdown -0.0177 over 3 trades; the portfolio has sharpe_ratio -0.2534, alpha -0.0802 and cumulative_return -0.0437. The plan to sell 5 AAPL shares is justified only by the position cap, with no acknowledgment that these results are weak.",
+      "suggestion": "State explicitly that the portfolio and the only backtested strategy show negative risk-adjusted returns, and treat the 5-share trim as a compliance action, not a performance-driven one.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "missing_data",
+      "severity": "MEDIUM",
+      "category": "sample_length",
+      "message": "Risk metrics rest on a very short sample: 86 price observations from 2026-05-04 to 2026-08-31 and returns_used = 85.0 for annualized_volatility 0.2629, historical_var_95_daily 0.0261 and max_drawdown -0.2080; the portfolio metrics (var_95_pct 1.4092, max_drawdown 0.1212, beta 0.8376, alpha -0.0802) come from the same short window.",
+      "suggestion": "Recompute volatility, VaR and drawdown on a longer history before relying on the \"low\" risk labels.",
+      "remedy_days": 365,
+      "remedy_factors": ""
+     },
+     {
+      "type": "risk_conflict",
+      "severity": "MEDIUM",
+      "category": "risk_assessment",
+      "message": "The portfolio is labelled risk level \"low\" while 23.1282% of it sits in AAPL, whose own metrics are annualized_volatility 0.2629 and max_drawdown -0.2080; the aggregate level (var_95_pct 1.4092 below var_medium_pct 2.0) is diluted by diversification and does not reflect the single-name concentration that triggers the veto.",
+      "suggestion": "Add a concentration-aware risk statement alongside the aggregate level, noting that the largest position carries 26.3% annualized volatility and a -20.8% drawdown.",
+      "remedy_days": 0,
+      "remedy_factors": "volatility_20d"
+     },
+     {
+      "type": "missing_data",
+      "severity": "LOW",
+      "category": "factor_coverage",
+      "message": "Factor evidence is limited to short-horizon volatility: volatility_20d = 0.2573 is available and volatility_60d is unavailable, even though 60-day trend evidence exists (momentum_60d = -0.1639).",
+      "suggestion": "Add the 60-day volatility factor so the 60-day momentum reading can be judged against a matching-horizon risk measure.",
+      "remedy_days": 0,
+      "remedy_factors": "volatility_60d"
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "plan",
+   "outcome": "parsed",
+   "response": {
+    "goal": "评估组合 7 中 AAPL 仓位超出 20% 单仓上限的情况，为减持 5 股 AAPL 提供研究依据（不执行任何交易）",
+    "reasoning_summary": "针对评审意见，把 AAPL 行情回溯窗口从 86 根扩展到 365 天，以缓解风险与回测指标样本过短的问题；对构成 SELL 共识的三条策略（momentum、rsi_reversion、ma_cross）逐一回测，避免结论只建立在一条未回测信号上；因子按建议集合同时观察动量、RSI 与波动率，以解释信号与因子的分歧。全部步骤仅供人工审批前的分析，风险由 Risk Agent 单独评估，不安排任何执行。",
+    "steps": [
+     {
+      "tool": "portfolio",
+      "purpose": "读取组合 7 的持仓，核实 AAPL 当前 25 股的数量与约 23.13% 的权重相对于 20% 单仓上限的超限程度。",
+      "required_inputs": [
+       {
+        "name": "portfolio_id",
+        "value": "7",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "market_data",
+      "purpose": "为 AAPL 获取 365 天日线 OHLCV（替代原先 86 根样本），作为后续信号、因子与回测的统一数据集，缓解样本过短问题。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "days",
+        "value": "365",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "signal",
+      "purpose": "在同一批扩展后的 AAPL K 线上重算三条策略的最新信号，检验 SELL 共识在更长样本下是否仍然成立。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategies",
+        "value": "ma_cross,momentum,rsi_reversion",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "factor",
+      "purpose": "按建议集合检查 AAPL 的动量、RSI 与波动率暴露，解释 momentum 为负而 rsi_14d 接近超卖的分歧背景。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "factors",
+        "value": "momentum_20d,rsi_14d,momentum_60d,volatility_20d",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "backtest",
+      "purpose": "在扩展后的 AAPL K 线上回测 momentum，为驱动 SELL 观点的主策略提供缺失的历史检验。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategy",
+        "value": "momentum",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "backtest",
+      "purpose": "回测 rsi_reversion，确认这条给出 HOLD 的规则在更长样本下的表现，避免中性信号未经检验。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategy",
+        "value": "rsi_reversion",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "backtest",
+      "purpose": "在 365 天样本上重新回测 ma_cross，对比此前仅 3 笔交易、Sharpe 为负的短样本结果。",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       },
+       {
+        "name": "strategy",
+        "value": "ma_cross",
+        "from_step": 0
+       }
+      ]
+     }
+    ],
+    "constraints": [
+     {
+      "key": "forbid_auto_trading",
+      "value": "True",
+      "source": "memory #3"
+     },
+     {
+      "key": "max_single_position_pct",
+      "value": "20.0",
+      "source": "memory #2"
+     },
+     {
+      "key": "risk_tolerance",
+      "value": "medium",
+      "source": "memory #1"
+     }
+    ],
+    "clarification_question": ""
+   }
+  },
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "review",
+   "outcome": "parsed",
+   "response": {
+    "issues": [
+     {
+      "type": "data_consistency",
+      "severity": "MEDIUM",
+      "category": "data_consistency",
+      "message": "The rsi_reversion backtest reports trade_count 0 but also total_return -0.0261 and max_drawdown -0.0318: a strategy that never traded cannot lose 2.61% or draw down 3.18% over the 261-day sample.",
+      "suggestion": "Recompute the rsi_reversion backtest so trade counts, returns and drawdowns come from the same run before using it as evidence in the consensus.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "missing_data",
+      "severity": "MEDIUM",
+      "category": "backtest_coverage",
+      "message": "Backtest evidence is extremely thin: momentum 2 trades, rsi_reversion 0 trades, ma_cross 6 trades, so two of the three strategies contributing to the consensus score of -0.6667 (SELL) have essentially no trade history behind them.",
+      "suggestion": "Run the backtests on a longer history so each strategy produces a meaningful number of trades before its signal is averaged into the consensus.",
+      "remedy_days": 1095,
+      "remedy_factors": ""
+     },
+     {
+      "type": "logic_gap",
+      "severity": "MEDIUM",
+      "category": "historical_performance",
+      "message": "All three strategies performed poorly in backtest (sharpe_ratio -2.0969 momentum, -2.5903 rsi_reversion, -3.5426 ma_cross; total_return -0.0261 and -0.0316), and the portfolio shows sharpe_ratio -0.2534, alpha -0.0802 and cumulative_return -0.0437; the SELL view rests mainly on momentum, whose own Sharpe is -2.0969 with total_return 0.0005.",
+      "suggestion": "Do not present the momentum signal as validated evidence while its own backtest Sharpe is strongly negative; state explicitly that the SELL consensus is unsupported by historical performance.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "logic_gap",
+      "severity": "MEDIUM",
+      "category": "signal_disagreement",
+      "message": "Signals split: ma_cross and rsi_reversion return HOLD (0) while momentum returns STRONG_SELL (-2), and the factors split the same way (momentum_20d -0.0837, momentum_60d -0.1639 bearish vs rsi_14d 30.5714 near oversold); the consensus_score -0.6667 (SELL) is an average that hides this disagreement.",
+      "suggestion": "Resolve the conflict between the bearish momentum factors and the oversold RSI before acting, or state which evidence dominates and why.",
+      "remedy_days": 0,
+      "remedy_factors": "rsi_14d,momentum_60d"
+     },
+     {
+      "type": "constraint_violation",
+      "severity": "MEDIUM",
+      "category": "permission",
+      "message": "The user constraint memory #3 forbids automatic trading, but the sell_quantity check ('after selling 5 of 25 AAPL: 23.1282% -> 19.40%') presents the 5-share reduction as a ready-to-execute trade without requiring manual confirmation.",
+      "suggestion": "Mark the 5-share AAPL reduction as a proposal requiring the user's explicit manual confirmation, consistent with the no-automatic-trading constraint.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "logic_gap",
+      "severity": "LOW",
+      "category": "data_consistency",
+      "message": "The sell_quantity check says selling 5 of 25 AAPL moves the weight from 23.1282% to 19.40%, but at the reported close of 165.2872 the 20 remaining shares are worth 3305.74 against the same total_value 17866.41, i.e. 18.50%, not 19.40%.",
+      "suggestion": "Recalculate the post-trade weight so the check's arithmetic matches the exposure table (20 x 165.2872 = 3305.74 on total value 17866.41).",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "missing_data",
+      "severity": "LOW",
+      "category": "factor_coverage",
+      "message": "Factor values include momentum_20d, rsi_14d, momentum_60d and volatility_20d (0.2573) but no volatility_60d, so the position-limit decision rests on a single short-window volatility estimate.",
+      "suggestion": "Add the longer-window volatility factor as supporting evidence before sizing the reduction.",
+      "remedy_days": 0,
+      "remedy_factors": "volatility_60d"
+     },
+     {
+      "type": "missing_data",
+      "severity": "LOW",
+      "category": "sample_length",
+      "message": "The market sample covers only 261 bars from 2025-09-01 to 2026-08-31 (days_requested 365 calendar), one year of history for strategies that include a 60-day momentum factor.",
+      "suggestion": "Extend the price history so the 60-day factors and the strategy backtests are estimated on a longer, more stable sample.",
+      "remedy_days": 1095,
+      "remedy_factors": ""
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "S2c_legit_sale_v2",
+   "schema": "decision",
+   "outcome": "parsed",
+   "response": {
+    "decision": "REDUCE_EXPOSURE",
+    "confidence": "low",
+    "rationale": [
+     "AAPL is 23.1282% of the portfolio, above the 20.0% single-position limit (memory #2); the Risk veto stands, so no new exposure is allowed.",
+     "The 5-share sale keeps the position within the limit, but the critic flagged an arithmetic discrepancy between the stated post-sale weight of 19.40% and the 18.50% implied by the reported 165.2872 close and a total_value of 17866.41.",
+     "The -0.6667 SELL consensus is weak evidence: momentum contributed 2 trades (Sharpe -2.0969), rsi_reversion 0 trades, and ma_cross and rsi_reversion both signaled HOLD, so confidence is capped at low.",
+     "Memory #3 forbids automatic trading, so treat the 5-share reduction as a proposal requiring explicit manual confirmation."
+    ],
+    "action_level": "PROPOSE"
+   }
+  },
+  {
+   "scenario": "S2c_stale_sale",
+   "schema": "plan",
+   "outcome": "parsed",
+   "response": {
+    "goal": "评估并支持将超过单一持仓上限的 AAPL 仓位减持 5 股的研究步骤",
+    "reasoning_summary": "先读取组合 7 的持仓，确认 AAPL 当前股数与权重是否确实超出 20% 上限，再获取 AAPL 日线数据作为计算基础。随后在同一份 bars 上计算策略信号与因子暴露，用于判断减持时点与当前动量/波动状态；实际下单与风险审批由 Risk Agent 和人工确认环节负责，本计划不涉及执行。",
+    "steps": [
+     {
+      "tool": "portfolio",
+      "purpose": "读取组合 7 的持仓明细，确认 AAPL 当前持股数量与仓位权重，核实是否超过 20% 单一持仓上限",
+      "required_inputs": [
+       {
+        "name": "portfolio_id",
+        "value": "7",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "market_data",
+      "purpose": "获取 AAPL 近期日线 OHLCV，作为信号与因子计算的输入",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "days",
+        "value": "120",
+        "from_step": 0
+       }
+      ]
+     },
+     {
+      "tool": "signal",
+      "purpose": "在 AAPL 日线上计算默认策略的最新信号，辅助判断减持时点",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       }
+      ]
+     },
+     {
+      "tool": "factor",
+      "purpose": "在 AAPL 日线上计算默认因子暴露（动量、波动率、偏离度等），评估当前持仓状态与减持背景",
+      "required_inputs": [
+       {
+        "name": "symbol",
+        "value": "AAPL",
+        "from_step": 0
+       },
+       {
+        "name": "bars",
+        "value": "",
+        "from_step": 2
+       }
+      ]
+     }
+    ],
+    "constraints": [
+     {
+      "key": "forbid_auto_trading",
+      "value": "True",
+      "source": "memory #3"
+     },
+     {
+      "key": "max_single_position_pct",
+      "value": "20.0",
+      "source": "memory #2"
+     },
+     {
+      "key": "risk_tolerance",
+      "value": "medium",
+      "source": "memory #1"
+     }
+    ],
+    "clarification_question": ""
+   }
+  },
+  {
+   "scenario": "S2c_stale_sale",
+   "schema": "review",
+   "outcome": "parsed",
+   "response": {
+    "issues": [
+     {
+      "type": "missing_data",
+      "severity": "HIGH",
+      "category": "backtest_coverage",
+      "message": "The backtests array is empty: the 5-strategy consensus (score -0.4, label HOLD) and the planned 5-share AAPL trim have no historical backtest evidence at all, so neither the signal quality nor the effect of the trade on the 23.1282% -> 19.40% weight path is validated.",
+      "suggestion": "Run backtests of the momentum/rsi_reversion/bollinger_reversion/macd/ma_cross signals and of the sell-5-AAPL scenario over the loaded history before acting on the consensus.",
+      "remedy_days": 365,
+      "remedy_factors": ""
+     },
+     {
+      "type": "risk_conflict",
+      "severity": "HIGH",
+      "category": "historical_performance",
+      "message": "Portfolio risk is reported as level 'low' although the portfolio metrics show negative risk-adjusted performance: sharpe_ratio -0.2534, alpha -0.0802, cumulative_return -0.0437, with max_drawdown 0.1212 and volatility 0.1385. A negative Sharpe and negative alpha are not consistent with an unqualified low-risk/healthy verdict.",
+      "suggestion": "Do not present the portfolio as low risk from the VaR thresholds alone; surface the negative Sharpe (-0.2534) and alpha (-0.0802) alongside the risk level before recommending only a 5-share trim.",
+      "remedy_days": 365,
+      "remedy_factors": ""
+     },
+     {
+      "type": "missing_data",
+      "severity": "MEDIUM",
+      "category": "sample_length",
+      "message": "AAPL history is only 75 bars (2026-05-04 to 2026-08-14) and risk metrics use returns_used 74.0, roughly 3.5 months, which is a short sample for the reported max_drawdown -0.207998, annualized_volatility 0.263937 and historical_var_95_daily 0.029046.",
+      "suggestion": "Extend the price history so drawdown, volatility and VaR for AAPL are estimated on a longer window before sizing the trim.",
+      "remedy_days": 730,
+      "remedy_factors": ""
+     },
+     {
+      "type": "missing_data",
+      "severity": "MEDIUM",
+      "category": "factor_coverage",
+      "message": "Factor coverage is limited to momentum_20d (-0.0837), volatility_20d (0.2573), rsi_14d (30.5714) and volume_ratio (0.9114); no 60-day momentum or volatility evidence is present to confirm the -0.4 consensus before cutting AAPL.",
+      "suggestion": "Add 60-day momentum and 60-day volatility factors to test whether the negative medium-term trend supports the trim.",
+      "remedy_days": 0,
+      "remedy_factors": "momentum_60d, volatility_60d"
+     },
+     {
+      "type": "logic_gap",
+      "severity": "MEDIUM",
+      "category": "signal_disagreement",
+      "message": "Signals conflict: momentum is STRONG_SELL (-2) while rsi_reversion, bollinger_reversion, macd and ma_cross are all HOLD (0), giving consensus -0.4 labelled HOLD, and rsi_14d at 30.5714 is near oversold, which argues against selling into weakness. The report does not reconcile selling 5 AAPL shares with this split.",
+      "suggestion": "Explain how a single momentum STRONG_SELL against four HOLD signals and an oversold RSI 30.5714 justifies the trim, or wait for signal confirmation.",
+      "remedy_days": 0,
+      "remedy_factors": "momentum_20d, rsi_14d"
+     },
+     {
+      "type": "logic_gap",
+      "severity": "MEDIUM",
+      "category": "data_consistency",
+      "message": "Portfolio VaR figures do not reconcile with the reported portfolio value: var_95 272.92 with var_95_pct 1.4092 implies a base near 19,366, not the total_value of 17866.41 (which would give about 1.53%); cvar_95 337.18 at cvar_95_pct 1.7411 implies the same larger base.",
+      "suggestion": "Recompute var_95_pct, var_99_pct and cvar_95_pct on the reported total_value 17866.41 or state which portfolio value basis was used.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     },
+     {
+      "type": "constraint_violation",
+      "severity": "LOW",
+      "category": "permission",
+      "message": "The user constraint '用户禁止自动交易 (memory #3)' is listed but no check confirms the AAPL sell is presented for manual user execution; the checks only cover symbol_risk, risk_tolerance, portfolio_risk, max_single_position and sell_quantity, and the vetoes say only 'no new exposure'.",
+      "suggestion": "Add an explicit confirmation/permission check stating the 5-share AAPL reduction must be executed by the user and not automatically.",
+      "remedy_days": 0,
+      "remedy_factors": ""
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "S2c_stale_sale",
+   "schema": "decision",
+   "outcome": "parsed",
+   "response": {
+    "decision": "REDUCE_EXPOSURE",
+    "confidence": "low",
+    "rationale": [
+     "Risk Agent veto: AAPL is 23.1282% of the portfolio, above the user's 20.0% limit (memory #2); no new exposure.",
+     "Selling 5 of 25 AAPL moves the weight to about 19.40%, back under the limit (critic note: SALE_REDUCES_POSITION), so the trim fixes the POSITION_LIMIT breach.",
+     "The critic's HIGH issue STALE_DATA is still unresolved (latest AAPL bar 2026-08-14, 18 days old); that is why confidence is low, and this is a limit-driven rebalance, not a bearish call.",
+     "The signals are mixed: consensus is -0.4 (HOLD), momentum is STRONG_SELL (-2), and the other four are HOLD; RSI 30.5714 is near oversold, so the trim should not be larger than needed.",
+     "Execute it manually: user forbids auto trading (memory #3), so this is only a proposal."
+    ],
+    "action_level": "PROPOSE"
+   }
+  }
+ ]
+}
