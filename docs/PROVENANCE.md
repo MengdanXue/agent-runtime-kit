@@ -4,7 +4,7 @@ agent-runtime-kit is an extraction, not a rewrite. This page records exactly wha
 
 ## Source
 
-- **Host project**: TraderX (product name "QuantRiskPro V2.0"), the author's private prototype of a trading-management system (2025–2026; Java + FastAPI + React). Written alone; prompted by a remote freelance enquiry that was never concluded (no contract, payment or delivery), so no rights were transferred. The repository stays private because it holds the enquirer's requirement documents and data files; none of that is here.
+- **Host project**: TraderX (product name "QuantRiskPro V2.0"), the author's private prototype of a trading-management system (2025–2026; Java + FastAPI + React). Written alone. The repository stays private; none of its documents or data files are here.
 - **Copied on**: 2026-11-12 from TraderX revision `156d265e`, into a fresh git history (the host's history is not carried over).
 - **Copied from** `backend-python/`:
 

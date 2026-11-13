@@ -6,11 +6,8 @@ Provenance
 ----------
 This package is the agent subsystem of TraderX (product name "QuantRiskPro
 V2.0"), a trading-management system prototype the author wrote alone in
-2025-2026. The work was prompted by a remote freelance enquiry that was never
-concluded: no contract was signed, no payment was made and nothing was
-delivered or accepted, so no rights were transferred. The TraderX repository
-stays private because it also holds the enquirer's requirement documents and
-data files; none of that material is included here.
+2025-2026. The TraderX repository is private; none of its documents or data
+files are included here.
 
 The code was copied from TraderX backend-python/src/agents (plus
 src/core/mock_guard.py, two API route modules and the agent tests) at
